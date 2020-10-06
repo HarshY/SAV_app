@@ -1,5 +1,7 @@
 import os
 import socket
+from datetime import datetime
+import ipaddress
 
 '''
     Initializes connection to whois server
@@ -14,6 +16,20 @@ def init_connection(serv_domain, serv_port):
     sock.connect(serv_addr)
     print("connected")
     return sock
+
+def parseDate(date_string):
+    # Common date and time formats on server
+    date_format = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%SZ", "%Y/%m/%d", 
+        "%Y/%m/%d %H:%M:%SZ", "%Y-%m-%dT%H:%M:%S"]
+
+    # Convert to datetime object
+    for f in date_format:
+        try:
+            date = datetime.strptime(date_string, f)
+            return date
+        except ValueError:
+            print(f"{f} didn't work")
+    return None
 
 '''
     Takes url of query domain and returns full server response from whois
@@ -48,24 +64,38 @@ def extract_expiry_date(final_response):
     response_lines = final_response.splitlines()
     expiry_string = ""
     for single_line in response_lines:
-        if(single_line.find("Expiry") >= 0):
+        single_lower = single_line.lower()
+        #print(single_lower.find("registry expiry date:") >= 0)
+        if(single_lower.find("expiration date:") >= 0 or 
+            single_lower.find("expires on:") >= 0 or
+            single_lower.find("registry expiry date:") >= 0 or
+            single_lower.find("expires:") >= 0 or
+            single_lower.find("expiry date:") >= 0 or
+            single_lower.find("renewal date:") >= 0 or
+            single_lower.find("registration expiration date:") >= 0 or
+            single_lower.find("record expires on:") >= 0 or
+            single_lower.find("domain expiration date:") >= 0):
             expiry_string = single_line
+            print("test")
             break
+    print(f"expiry string is: {expiry_string}")
     if(expiry_string == ""):
         return ""
     expiry_date_time = expiry_string.split(": ")[1]
-    expiry_date = expiry_date_time.split("T")[0]
+    print(expiry_date_time)
+    expiry_date = parseDate(expiry_date_time)
     print(expiry_date)
     return expiry_date
 
-def get_registration():
+def get_registration(domain_name):
     sock = init_connection("whois.verisign-grs.com", 43)
-    query_url = "weather.com"
-    final_response = get_response(query_url, sock)
+    final_response = get_response(domain_name, sock)
     expiry_date = extract_expiry_date(final_response)
 
 def main():
-    get_registration()
+    print("Please enter domain name: ")
+    domain_name = input()
+    get_registration(domain_name)
 
 if __name__ == "__main__":
     main()
