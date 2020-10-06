@@ -1,29 +1,71 @@
 import os
 import socket
 
-# Initialize socket
-sock = socket.socket(socket.AF_INET)
-#input_domain = input()
-#input_domain = "www.weather.com"
+'''
+    Initializes connection to whois server
+    Inputs:
+        serv_domain: (String) domain pf whois server
+        serv_port: Port to send request to (43)
+    Out
+'''
+def init_connection(serv_domain, serv_port):
+    sock = socket.socket(socket.AF_INET)
+    serv_addr = (serv_domain, serv_port)
+    sock.connect(serv_addr)
+    print("connected")
+    return sock
 
-# Connect to whois server
-#print(socket.gethostbyaddr(input_domain))
-serv_addr = ("whois.verisign-grs.com", 43)
-sock.connect(serv_addr)
-print("connected")
+'''
+    Takes url of query domain and returns full server response from whois
+    Inputs:
+        query_url: (String) url of user input domain
+        sock: (Socket) socket connection 
+    Output:
+        full response of server as string
+'''
+def get_response(query_url, sock):
+    query_url_bytes = bytes(query_url, encoding="utf-8")
+    sock.send(query_url_bytes + b"\r\n")
+    print("sent")
 
-# Send query to whois server
-query_address = "weather.com"
-final_response = b""
-sock.send(bytes(query_address, "utf-8") + b"\r\n")
-print("sent")
-
-# Receive bytes from whois server
-tmp = sock.recv(128)
-final_response += tmp
-while tmp:
+    final_response_arr = bytearray()
     tmp = sock.recv(128)
-    final_response += tmp
-print("received")
-print(final_response)
-sock.close()
+    final_response_arr.extend(tmp)
+    while tmp:
+        tmp = sock.recv(128)
+        final_response_arr.extend(tmp)
+    print("received")
+    return final_response_arr.decode(encoding="utf-8")
+
+'''
+    Takes full server response and returns the expiry date
+    Inputs:
+        final_response: (String) response from server
+    Output:
+        expiry date as string
+'''
+def extract_expiry_date(final_response):
+    response_lines = final_response.splitlines()
+    expiry_string = ""
+    for single_line in response_lines:
+        if(single_line.find("Expiry") >= 0):
+            expiry_string = single_line
+            break
+    if(expiry_string == ""):
+        return ""
+    expiry_date_time = expiry_string.split(": ")[1]
+    expiry_date = expiry_date_time.split("T")[0]
+    print(expiry_date)
+    return expiry_date
+
+def get_registration():
+    sock = init_connection("whois.verisign-grs.com", 43)
+    query_url = "weather.com"
+    final_response = get_response(query_url, sock)
+    expiry_date = extract_expiry_date(final_response)
+
+def main():
+    get_registration()
+
+if __name__ == "__main__":
+    main()
