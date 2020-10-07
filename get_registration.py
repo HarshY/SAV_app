@@ -10,11 +10,11 @@ import ipaddress
         serv_port: Port to send request to (43)
     Out
 '''
-def init_connection(serv_domain, serv_port):
+def initConnection(serv_domain, serv_port):
     sock = socket.socket(socket.AF_INET)
     serv_addr = (serv_domain, serv_port)
     sock.connect(serv_addr)
-    print("connected")
+    #print("connected")
     return sock
 
 def parseDate(date_string):
@@ -28,7 +28,8 @@ def parseDate(date_string):
             date = datetime.strptime(date_string, f)
             return date
         except ValueError:
-            print(f"{f} didn't work")
+            pass
+            #print(f"{f} didn't work")
     return None
 
 '''
@@ -39,10 +40,10 @@ def parseDate(date_string):
     Output:
         full response of server as string
 '''
-def get_response(query_url, sock):
+def getResponse(query_url, sock):
     query_url_bytes = bytes(query_url, encoding="utf-8")
     sock.send(query_url_bytes + b"\r\n")
-    print("sent")
+    #print("sent")
 
     final_response_arr = bytearray()
     tmp = sock.recv(128)
@@ -50,7 +51,7 @@ def get_response(query_url, sock):
     while tmp:
         tmp = sock.recv(128)
         final_response_arr.extend(tmp)
-    print("received")
+    #print("received")
     return final_response_arr.decode(encoding="utf-8")
 
 '''
@@ -60,7 +61,7 @@ def get_response(query_url, sock):
     Output:
         expiry date as string
 '''
-def extract_expiry_date(final_response):
+def extractExpiryDate(final_response):
     response_lines = final_response.splitlines()
     expiry_string = ""
     for single_line in response_lines:
@@ -76,17 +77,19 @@ def extract_expiry_date(final_response):
             single_lower.find("record expires on:") >= 0 or
             single_lower.find("domain expiration date:") >= 0):
             expiry_string = single_line
-            print("test")
+            #print("test")
             break
-    print(f"expiry string is: {expiry_string}")
+    #print(f"expiry string is: {expiry_string}")
     if(expiry_string == ""):
         return ""
     expiry_date_time = expiry_string.split(": ")[1]
-    print(expiry_date_time)
+    #print(expiry_date_time)
     expiry_date = parseDate(expiry_date_time)
-    print(expiry_date)
+    #print(expiry_date)
     return expiry_date
 
+'''
+'''
 def getDomain(user_input):
     url = ""
     try:
@@ -94,7 +97,7 @@ def getDomain(user_input):
         url = socket.gethostbyaddr(user_input)[0]
     except ValueError:
         url = user_input
-    print(url)
+    #print(url)
     if(url.find("//") >= 0):
         url = url.split("//")[1] #Remove everything before //
     if(url.find("/") >= 0):
@@ -112,20 +115,18 @@ def getDomain(user_input):
             break
     return domain
 
-def get_registration(domain_name):
-    sock = init_connection("whois.verisign-grs.com", 43)
-    final_response = get_response(domain_name, sock)
-    expiry_date = extract_expiry_date(final_response)
-
-def main():
-    #print("To enter url press u. To enter ip address press i")
-    #user_choice = input()
-    #if(user_choice == "u")
-    print("Please enter domain name: ")
-    user_input = input()
-    domain_name = getDomain(user_input)
-    print(domain_name)
-    get_registration(domain_name)
-
-if __name__ == "__main__":
-    main()
+'''
+'''
+def getRegistration(domain_name):
+    whois_servers = ["whois.verisign-grs.com", "whois.pir.org"]
+    whois_port = 43
+    expiry_date = ""
+    for server in whois_servers:
+        #sock = initConnection("whois.verisign-grs.com", 43)
+        sock = initConnection(server, whois_port)
+        final_response = getResponse(domain_name, sock)
+        #print(final_response)
+        expiry_date = extractExpiryDate(final_response)
+        if(expiry_date != ""):
+            break
+    return expiry_date
