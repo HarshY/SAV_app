@@ -1,5 +1,6 @@
 from get_registration import getRegistration, getDomain
 
+# Test from test.txt
 def main():
     test_file = open("./test.txt", encoding="utf-8")
     test_list = test_file.read().splitlines()
